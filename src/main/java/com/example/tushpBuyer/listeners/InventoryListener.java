@@ -418,7 +418,8 @@ public class InventoryListener implements Listener {
         String title = event.getView().getTitle();
 
         // Возвращаем предметы из слотов продажи при закрытии главного меню
-        if (title.contains("СКУПЩИК")) {
+        // Важно: проверяем только главное меню скупщика, не меню автоскупщика
+        if (title.contains("СКУПЩИК") && !title.contains("АВТО")) {
             Inventory inventory = event.getInventory();
             for (int sellSlot : MainMenuGUI.SELL_SLOTS) {
                 ItemStack item = inventory.getItem(sellSlot);
