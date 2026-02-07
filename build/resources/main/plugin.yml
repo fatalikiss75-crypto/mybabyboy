@@ -1,0 +1,34 @@
+name: tushpBuyer
+version: '2.0'
+main: com.example.tushpBuyer.TushpBuyer
+api-version: '1.21'
+author: TushP
+description: Продвинутый плагин скупщика с системой прокачки и магазином за очки
+
+commands:
+  buyer:
+    description: Открыть меню скупщика
+    usage: /buyer
+    aliases: [скупщик, shop, sell]
+    permission: buyer.use
+    permission-message: §cУ вас нет прав для использования этой команды!
+  
+  tushpbuyeradditem:
+    description: Добавить предмет в магазин за очки
+    usage: /tushpbuyeradditem <цена> <название>
+    permission: buyer.admin
+    permission-message: §cУ вас нет прав для использования этой команды!
+
+permissions:
+  buyer.use:
+    description: Доступ к скупщику
+    default: true
+  buyer.reload:
+    description: Перезагрузка конфигурации
+    default: op
+  buyer.admin:
+    description: Административные права
+    default: op
+    children:
+      buyer.use: true
+      buyer.reload: true
