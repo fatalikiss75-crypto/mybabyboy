@@ -69,20 +69,60 @@ public class InventoryListener implements Listener {
 
         // Проверяем клики в инвентаре игрока
         if (slot >= 54) {
+            ClickType clickType = event.getClick();
+
+            // Разрешаем только SHIFT+клик для перемещения предметов В слоты продажи
+            // Но запрещаем любые другие действия которые могут забирать предметы из GUI
+            if (clickType == ClickType.SHIFT_LEFT || clickType == ClickType.SHIFT_RIGHT) {
+                // SHIFT+клик разрешен - предметы переместятся в свободные слоты GUI
+                event.setCancelled(false);
+                return;
+            }
+
+            // Обычные клики в инвентаре игрока разрешаем
             event.setCancelled(false);
             return;
         }
 
-        // Разрешаем размещать предметы в слоты продажи
+        // Разрешаем только размещение предметов в слоты продажи, но не забор
         if (MainMenuGUI.isSellSlot(slot)) {
             ClickType clickType = event.getClick();
+            ItemStack currentItem = event.getCurrentItem();
+            ItemStack cursorItem = event.getCursor();
 
-            if (clickType == ClickType.LEFT || clickType == ClickType.RIGHT ||
-                    clickType == ClickType.SHIFT_LEFT || clickType == ClickType.SHIFT_RIGHT ||
-                    clickType == ClickType.NUMBER_KEY || clickType == ClickType.SWAP_OFFHAND) {
+            // Разрешаем только действия по размещению предметов
+            // cursorItem != null && cursorItem.getType() != Material.AIR - игрок держит предмет
+            // currentItem == null || currentItem.getType() == Material.AIR - слот пустой
+            // Это означает что игрок хочет положить предмет в пустой слот
+            boolean isPlacing = cursorItem != null && cursorItem.getType() != Material.AIR &&
+                    (currentItem == null || currentItem.getType() == Material.AIR);
+
+            // Разрешаем обмен предметами (swap) если оба не пустые
+            boolean isSwapping = cursorItem != null && cursorItem.getType() != Material.AIR &&
+                    currentItem != null && currentItem.getType() != Material.AIR;
+
+            // Разрешаем NUMBER_KEY только если слот пустой (игрок кладет из хотбара)
+            boolean isHotbarPlacing = clickType == ClickType.NUMBER_KEY &&
+                    (currentItem == null || currentItem.getType() == Material.AIR);
+
+            // Разрешаем SHIFT+клик только для перемещения из инвентаря игрока В слот продажи
+            // Это проверяется по тому что clicked inventory - это инвентарь игрока (slot >= 54)
+            // Но здесь slot < 54 (мы в GUI), так что SHIFT+клик из GUI не разрешаем
+            // SHIFT+клик из инвентаря игрока обрабатывается отдельно (slot >= 54)
+
+            if ((clickType == ClickType.LEFT || clickType == ClickType.RIGHT) && (isPlacing || isSwapping)) {
                 event.setCancelled(false);
                 return;
             }
+
+            if (isHotbarPlacing) {
+                event.setCancelled(false);
+                return;
+            }
+
+            // Все остальные действия в слотах продажи отменяем (включая забор предметов)
+            event.setCancelled(true);
+            return;
         }
 
         // Все остальные клики в GUI отменяем
@@ -418,7 +458,8 @@ public class InventoryListener implements Listener {
         String title = event.getView().getTitle();
 
         // Возвращаем предметы из слотов продажи при закрытии главного меню
-        if (title.contains("СКУПЩИК")) {
+        // Важно: проверяем только главное меню скупщика, не меню автоскупщика
+        if (title.contains("СКУПЩИК") && !title.contains("АВТО")) {
             Inventory inventory = event.getInventory();
             for (int sellSlot : MainMenuGUI.SELL_SLOTS) {
                 ItemStack item = inventory.getItem(sellSlot);
